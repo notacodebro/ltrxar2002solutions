@@ -1,0 +1,98 @@
+reset corp-leaf001:
+
+!
+! interface configuration clear
+!
+interface GigabitEthernet1/0/1
+ no ip pim sparse-mode
+ no ip ospf network point-to-point
+ no ip ospf 10 area 0
+!
+interface Loopback0
+ no ip pim sparse-mode
+ no ip ospf 10 area 0
+!
+!
+!
+!
+! clear routing configuration
+no router ospf 10
+!
+no router bgp 100
+!
+!
+!
+! clear multicast 
+no ip multicast-routing
+no ip pim rp-address 11.11.11.11
+!
+!
+! clear vxlan configuration 
+no vlan configuration 500
+!
+no l2vpn evpn
+!
+no l2vpn evpn instance 500 vlan-based
+!
+no interface nve1
+!
+!
+
+Solution push: 
+
+
+ interface GigabitEthernet1/0/1
+ ip pim sparse-mode
+ ip ospf network point-to-point
+ ip ospf 10 area 0
+
+
+interface Loopback0
+ ip pim sparse-mode
+ ip ospf 10 area 0
+
+
+router ospf 10
+ router-id 2.2.2.2
+ passive-interface Loopback0
+!
+router bgp 100
+ bgp router-id 2.2.2.2
+ bgp log-neighbor-changes
+ no bgp default ipv4-unicast
+ neighbor 11.11.11.11 remote-as 100
+ neighbor 11.11.11.11 update-source Loopback0
+ !
+ address-family ipv4
+ exit-address-family
+ !
+ address-family l2vpn evpn
+  neighbor 11.11.11.11 activate
+  neighbor 11.11.11.11 send-community both
+  neighbor 11.11.11.11 soft-reconfiguration inbound
+ exit-address-family
+
+
+ip multicast-routing
+ip pim rp-address 11.11.11.11
+
+vlan configuration 500
+ member evpn-instance 500 vni 5000 
+
+
+l2vpn evpn
+ router-id Loopback0
+ default-gateway advertise
+!
+l2vpn evpn instance 500 vlan-based
+ encapsulation vxlan
+ replication-type static
+!
+
+interface nve1
+ no ip address
+ source-interface Loopback0
+ host-reachability protocol bgp
+ member vni 5000 mcast-group 224.0.11.1
+!
+
